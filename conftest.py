@@ -6,6 +6,11 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 
 def pytest_addoption(parser):
+    """
+    adaptor of the command line variables
+    :param parser:
+    :return:
+    """
     parser.addoption("--MobileEmulation", action="store", default="iPhone 14 Pro Max",
                      choices=("iPhone 14 Pro Max", False), help="Testing in MobileEmulation or not. Options: True/False")
     parser.addoption("--browser", action='store', default="chrome",
@@ -16,13 +21,13 @@ def pytest_addoption(parser):
                    choices=(True, False), help="Headless mode?")
     parser.addoption("--env", action='store', default="Stage",
                    choices=("stage", "Stage", "UAT", "uat", "dev", "Dev"), help="Headless mode?")
-    parser.addoption("--maxscreen", action='store', default=True,
+    parser.addoption("--max-screen", action='store', default=True,
                    choices=(True, False), help="Max Screen? Options: True/False")
 
 @pytest.fixture(scope="session")
 def driver_options_modifier(request):
     """
-    Take command line parameter by leverage pytest_addoption() to alter the driver options
+    Take the command line parameter by leverage pytest_addoption() to alter the driver options
     :param request: pytest build-in parameters passed by fixture. Do nothing with it
     :return: Options for drivers to modify browser behaviour
     """
@@ -42,18 +47,14 @@ def driver_options_modifier(request):
 
             headless = request.config.getoption("--headless")
 
-
-            # reference for Device information: https://github.com/alxwndr/list-of-custom-emulated-devices-in-chrome
-
-            mobile_emulation = {
-                "deviceMetrics": {"width": int(window_size[0]), "height": int(window_size[1]), "pixelRatio": 3},
-                "userAgent": "Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19",
-                "clientHints": {"platform": "iOS", "mobile": True}}
-
             if mobile_emulation_test:
+                # reference for Device information: https://github.com/alxwndr/list-of-custom-emulated-devices-in-chrome
+                mobile_emulation = {
+                    "deviceMetrics": {"width": int(window_size[0]), "height": int(window_size[1]), "pixelRatio": 3},
+                    "userAgent": "Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19",
+                    "clientHints": {"platform": "iOS", "mobile": True}}
                 options.add_experimental_option("mobileEmulation",  mobile_emulation)
-
-            if window_size:
+            elif window_size:
                 options.add_argument(f"--windows-size={window_size[0]},{window_size[1]}")
 
             if headless:
@@ -66,20 +67,27 @@ def driver(request, driver_options_modifier) -> webdriver:
     """
     yield the webdriver depends on command line options, default chrome driver.
 
-    :param request: pytest build-in parameters passed by fixture. Do nothing with it
+    :param request: pytest build-in parameters passed by fixture.
     :param driver_options_modifier: Take the desired options from, passed by fixture driver_options_modifier()
     :yield: webdriver
     """
     options = driver_options_modifier
     browser = request.config.getoption("--browser").lower()
+    max_screen = request.config.getoption("--max-screen")
 
     match browser:
         case "chrome":
             driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-            driver.maximize_window()
+            if max_screen:
+                driver.maximize_window()
             yield  driver
         case _:
             raise EnvironmentError("There are no proper WebDriver")
     driver.quit()
 
-
+@pytest.fixture(scope="function")
+def case_name(request):
+    """
+    yield case name for tracking purpose
+    """
+    yield request.node.name
