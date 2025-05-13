@@ -1,4 +1,7 @@
 import pytest
+import logging
+from pathlib import Path
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options as chrome_options
@@ -31,33 +34,32 @@ def driver_options_modifier(request):
     :param request: pytest build-in parameters passed by fixture. Do nothing with it
     :return: Options for drivers to modify browser behaviour
     """
-    browser = request.config.getoption("--browser").lower()
+    arg ={
+        'browser': request.config.getoption("--browser").lower(),
+        'windows_size' : request.config.getoption("--windows-size").replace(" ", "").split(",", 1),
+        'headless' : request.config.getoption("--headless"),
+        'mobile_emulation_test': request.config.getoption("--MobileEmulation")
 
-    match browser:
+    }
+
+    match arg['browser']:
         case "chrome" | _:
             options = chrome_options()
-
-
             options.add_argument("--no-sandbox")
             options.add_experimental_option("useAutomationExtension", False)
             options.add_experimental_option("excludeSwitches", ["enable-automation"])
 
-            mobile_emulation_test =  request.config.getoption("--MobileEmulation")
-            window_size = request.config.getoption("--windows-size").replace(" ", "").split(",", 1)
-
-            headless = request.config.getoption("--headless")
-
-            if mobile_emulation_test:
+            if arg['mobile_emulation_test']:
                 # reference for Device information: https://github.com/alxwndr/list-of-custom-emulated-devices-in-chrome
                 mobile_emulation = {
-                    "deviceMetrics": {"width": int(window_size[0]), "height": int(window_size[1]), "pixelRatio": 3},
+                    "deviceMetrics": {"width": int(arg['windows_size'][0]), "height": int(arg['windows_size'][1]), "pixelRatio": 3},
                     "userAgent": "Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19",
                     "clientHints": {"platform": "iOS", "mobile": True}}
                 options.add_experimental_option("mobileEmulation",  mobile_emulation)
-            elif window_size:
-                options.add_argument(f"--windows-size={window_size[0]},{window_size[1]}")
+            elif arg['windows_size']:
+                options.add_argument(f"--windows-size={arg['windows_size'][0]},{arg['windows_size'][1]}")
 
-            if headless:
+            if arg['headless']:
                 options.add_argument("headless=new")
 
             return options
@@ -91,3 +93,24 @@ def case_name(request):
     yield case name for tracking purpose
     """
     yield request.node.name
+
+def pytest_configure():
+    project_path = Path.cwd()
+    logs_dir = project_path / "logs"
+    logs_dir.mkdir(exist_ok=True)
+
+    now = datetime.now()
+    timestamp = now.strftime("%H:%M:%S %m-%d")
+    log_file = logs_dir / f"{timestamp}.log"
+
+    logging.getLogger(__name__)
+
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[
+            logging.FileHandler(log_file, mode='w'),
+            logging.StreamHandler()  # optional if you want both file and console
+        ]
+    )

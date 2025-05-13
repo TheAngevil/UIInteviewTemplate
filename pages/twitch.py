@@ -35,3 +35,4 @@ class BrowsePage(Page):
         return Element(By.XPATH, value=f'//div[@role="list"]//*[contains(@href, "{keyword}home")]', remark='streamer_home_page')
 
     search_streamer_page_load_indicator = Element(By.XPATH, value='//button[@role="link"]//img', remark="search_streamer_page_load_indicator")
+    element_not_exist = Element(By.XPATH, value='//butt', remark="This does not exist")

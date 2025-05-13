@@ -1,3 +1,4 @@
+import logging
 import time
 
 from pages.twitch import HomePage, BrowsePage, ShareElements
@@ -45,16 +46,21 @@ class TestTwitch:
 
         # 5 Select one streamer
         # Select the first
-        twitch_browse_page.streamer_home_page().wait_clickable(timeout=5).click()
-
+        first_streamer = twitch_browse_page.streamer_home_page().wait_clickable(timeout=5)
+        first_streamer.click()
 
         while driver.execute_script("return document.readyState") != "complete":
             print("It is not done")
             time.sleep(0.2)
 
         twitch_browse_page.search_streamer_page_load_indicator.wait_visible(timeout=10)
-
         action.take_screen_shot(driver, case_name)
+
+        twitch_browse_page.element_not_exist.wait_visible(reraise=False)
+
+        logger =  logging.getLogger(__name__)
+        logger.warning("%s", __name__)
+        logger.warning("Test Finished! ")
 
         """
         4 scroll down 2 times
