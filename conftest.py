@@ -22,8 +22,8 @@ def pytest_addoption(parser):
                    help="emulation size, Option: 'Width: x pixel, Length: y pixel', e.g.: '430,932'")
     parser.addoption("--headless", action='store', default=False,
                    choices=(True, False), help="Headless mode?")
-    parser.addoption("--env", action='store', default="Stage",
-                   choices=("stage", "Stage", "UAT", "uat", "dev", "Dev"), help="Headless mode?")
+    parser.addoption("--env", action='store', default = 'Staging',
+                   choices=("staging", "Staging", "UAT", "uat", "dev", "Dev"), help="Testing Env, e.g.: Staging, UAT")
     parser.addoption("--max-screen", action='store', default=True,
                    choices=(True, False), help="Max Screen? Options: True/False")
 
